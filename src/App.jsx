@@ -12,6 +12,7 @@ import coloredAtlasLogoUrl from './assets/images/atlas_logo_full.svg'
 import { getBannerTotalSize } from './components/library/bannerLayout/bannerLayoutSchema.js'
 import GameBanner from './components/library/GameBanner.jsx'
 import GameTree from './components/library/GameTree.jsx'
+import WishlistAddToGames from './components/library/WishlistAddToGames.jsx'
 import CollectionsView from './components/collections/CollectionsView.jsx'
 import CollectionModal from './components/collections/CollectionModal.jsx'
 import BulkTagModal from './components/collections/BulkTagModal.jsx'
@@ -2885,6 +2886,9 @@ const App = () => {
           </span>
         </div>
         <div className="justify-self-end flex items-center h-full">
+          {libraryMode === 'wishlist' && wishlistGames.length > 0 && (
+            <WishlistAddToGames games={wishlistGames} />
+          )}
           <DownloadsStatus
             onOpen={openDownloads}
             active={libraryView === 'downloads'}

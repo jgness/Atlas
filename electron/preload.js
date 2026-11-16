@@ -43,6 +43,7 @@ contextBridge.exposeInMainWorld("electronAPI", {
   toggleWishlistEntry: (entry) => ipcRenderer.invoke("wishlist-toggle", entry),
   isWishlistEntry: (identity) => ipcRenderer.invoke("wishlist-check", identity),
   getWishlistEntries: () => ipcRenderer.invoke("wishlist-list"),
+  addWishlistToGames: (ids) => ipcRenderer.invoke("wishlist-add-to-games", ids),
   getWishlistEntryIdentities: () => ipcRenderer.invoke("wishlist-identities"),
   addBlacklistEntry: (entry) => ipcRenderer.invoke("blacklist-add", entry),
   removeBlacklistEntry: (identity) =>

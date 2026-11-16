@@ -43,6 +43,9 @@ const { buildDefaultConfig } = require('../config/configSchema')
 // why it is not a second copy.
 const { resolveCatalogRecord, ensureCatalogRecord } = require('../library/catalogRecord')
 const { getCatalogEntryByRef } = require('../db/catalogEntry')
+const { getWishlistEntries } = require('../db/wishlist')
+const { withTransaction } = require('../db/writeLock')
+const { refreshCatalogIndexForAtlasIds } = require('../db/catalogIndex')
 const { toCatalogRef, describeCatalogRef } = require('../library/catalogRef')
 const {
   addLewdCornerMapping,
@@ -1504,6 +1507,44 @@ module.exports = function registerImporterHandlers(ctx) {
     findRecordByLewdCornerId,
     findRecordBySteamId,
     findRecordByGogId,
+  })
+
+  // Resolve IDs from the stored Wishlist so the renderer cannot supply catalog
+  // metadata, and commit each title independently so a batch can partly succeed.
+  ipcMain.handle('wishlist-add-to-games', async (_, ids) => {
+    const selected = new Set(Array.isArray(ids) ? ids : [])
+    const wishlist = await getWishlistEntries()
+    const deps = buildCatalogRecordDeps()
+    const results = []
+    const addedAtlasIds = []
+    for (const entry of wishlist) {
+      if (!selected.has(entry.wishlist_id)) continue
+      const { title, wishlist_id: id } = entry
+      try {
+        const catalog = entry.catalog_ref && await getCatalogEntryByRef(entry.catalog_ref)
+        if (!catalog?.atlasId) {
+          results.push({ id, title, status: 'unmatched' })
+          continue
+        }
+        const record = await withTransaction('wishlist.addToGames', deps.dbRun, () =>
+          ensureCatalogRecord(deps, catalog, { skipExisting: true }),
+        )
+        if (record.created) addedAtlasIds.push(catalog.atlasId)
+        results.push({ id, title, status: record.created ? 'added' : 'existing' })
+      } catch (error) {
+        console.error('Failed to add Wishlist entry to Games:', id, error)
+        results.push({ id, title, status: 'failed' })
+      }
+    }
+    if (addedAtlasIds.length > 0) {
+      await refreshCatalogIndexForAtlasIds(addedAtlasIds).catch(error =>
+        console.warn('Could not refresh catalog after adding Wishlist games:', error),
+      )
+      BrowserWindow.getAllWindows().forEach((win) => {
+        if (!win.isDestroyed()) win.webContents.send('import-complete')
+      })
+    }
+    return results
   })
 
   // ── Phase 3: import owned Steam games (incl. not installed) ────────────────

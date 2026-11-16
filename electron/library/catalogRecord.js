@@ -160,7 +160,7 @@ async function resolveCatalogRecord(deps, entry, { allowTitleMatch = true } = {}
  * appearing under an unexpected game silently and appearing there with a line
  * in the log saying why.
  */
-async function ensureCatalogRecord(deps, entry, { allowTitleMatch = true } = {}) {
+async function ensureCatalogRecord(deps, entry, { allowTitleMatch = true, skipExisting = false } = {}) {
   const identity = normalizeCatalogIdentity(entry);
   const resolved = await resolveCatalogRecord(deps, entry, { allowTitleMatch });
 
@@ -207,7 +207,12 @@ async function ensureCatalogRecord(deps, entry, { allowTitleMatch = true } = {})
     }
   }
 
-  // Written unconditionally, including for a record that already existed —
+  // Adding a Wishlist entry must leave existing library links alone.
+  if (skipExisting && !created) {
+    return { recordId, created, via, titleCollision, identity, mappings: {} };
+  }
+
+  // By default mappings are also written for a record that already existed —
   // that is the existing importer behaviour and it is what backfills a mapping
   // the record was missing (a title-matched record has no atlas mapping until
   // something adds one, and without it no banner or metadata hydrates).

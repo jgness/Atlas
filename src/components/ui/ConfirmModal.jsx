@@ -15,6 +15,7 @@ export default function ConfirmModal({
   busyLabel = 'Working...',
   tone = 'accent',
   busy = false,
+  confirmDisabled = false,
   alert = false,
   onConfirm,
   onCancel,
@@ -56,7 +57,7 @@ export default function ConfirmModal({
           )}
           <button
             onClick={() => (alert ? onCancel?.() : onConfirm?.())}
-            disabled={busy}
+            disabled={busy || confirmDisabled}
             className={`px-4 py-1.5 rounded disabled:opacity-50 ${alert ? 'bg-button hover:bg-buttonHover' : confirmClass}`}
           >
             {busy ? busyLabel : alert ? 'OK' : confirmLabel}

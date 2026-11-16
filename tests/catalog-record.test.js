@@ -168,6 +168,17 @@ describe('resolveCatalogRecord order', () => {
 })
 
 describe('ensureCatalogRecord', () => {
+  it('leaves existing mappings untouched when adding a Wishlist title', async () => {
+    const { deps, calls } = makeDeps({ mappings: { 'atlas_mappings:atlas_id:15515': 42 } })
+    const result = await ensureCatalogRecord(deps, { atlasId: 15515, f95Id: 107102 }, {
+      skipExisting: true,
+    })
+
+    expect(result).toMatchObject({ recordId: 42, created: false })
+    expect(calls.addGame).toEqual([])
+    expect(calls.mappings).toEqual([])
+    expect(calls.dbRun).toEqual([])
+  })
   it('creates the record and writes every mapping the entry carries', async () => {
     const { deps, calls } = makeDeps()
     const result = await ensureCatalogRecord(
